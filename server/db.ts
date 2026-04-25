@@ -1,4 +1,4 @@
-import { eq, desc, and, like, inArray, gte, lte, or } from "drizzle-orm";
+import { eq, desc, and, like, inArray, gte, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, InsertJob, jobs } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -108,21 +108,24 @@ export async function upsertJob(job: InsertJob): Promise<void> {
   }
 
   try {
-    await db.insert(jobs).values(job).onDuplicateKeyUpdate({
-      set: {
-        title: job.title,
-        companyName: job.companyName,
-        location: job.location,
-        description: job.description,
-        jobType: job.jobType,
-        salary: job.salary,
-        shareLink: job.shareLink,
-        thumbnail: job.thumbnail,
-        via: job.via,
-        postedAt: job.postedAt,
-        updatedAt: new Date(),
-      },
-    });
+    await db
+      .insert(jobs)
+      .values(job)
+      .onDuplicateKeyUpdate({
+        set: {
+          title: job.title,
+          companyName: job.companyName,
+          location: job.location,
+          description: job.description,
+          jobType: job.jobType,
+          salary: job.salary,
+          shareLink: job.shareLink,
+          thumbnail: job.thumbnail,
+          via: job.via,
+          postedAt: job.postedAt,
+          updatedAt: new Date(),
+        },
+      });
   } catch (error) {
     console.error("[Database] Failed to upsert job:", error);
     throw error;
@@ -135,6 +138,7 @@ export async function upsertJob(job: InsertJob): Promise<void> {
 export async function searchJobsInDb(
   query?: string,
   filters?: {
+    location?: string;
     jobType?: string[];
     company?: string;
     dateRange?: "1h" | "24h" | "72h";
@@ -152,10 +156,7 @@ export async function searchJobsInDb(
     // Filtro por palavra-chave
     if (query) {
       whereConditions.push(
-        or(
-          like(jobs.title, `%${query}%`),
-          like(jobs.description, `%${query}%`)
-        )
+        or(like(jobs.title, `%${query}%`), like(jobs.description, `%${query}%`))
       );
     }
 
@@ -167,6 +168,11 @@ export async function searchJobsInDb(
     // Filtro por empresa
     if (filters?.company) {
       whereConditions.push(like(jobs.companyName, `%${filters.company}%`));
+    }
+
+    // Filtro por localização
+    if (filters?.location) {
+      whereConditions.push(like(jobs.location, `%${filters.location}%`));
     }
 
     // Filtro por data
@@ -201,6 +207,27 @@ export async function searchJobsInDb(
   } catch (error) {
     console.error("[Database] Failed to search jobs:", error);
     throw error;
+  }
+}
+
+export async function getLatestJobsUpdatedAt(): Promise<Date | null> {
+  const db = await getDb();
+  if (!db) {
+    return null;
+  }
+
+  try {
+    const result = await db
+      .select({ latest: sql<Date | null>`max(${jobs.updatedAt})` })
+      .from(jobs);
+
+    return result[0]?.latest ?? null;
+  } catch (error) {
+    console.error(
+      "[Database] Failed to get latest jobs update timestamp:",
+      error
+    );
+    return null;
   }
 }
 

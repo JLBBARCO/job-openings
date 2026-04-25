@@ -1,0 +1,26 @@
+{
+  "buildCommand": "npm run build:client",
+  "outputDirectory": "dist/public",
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@5.3.19",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.ts"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/jobs-refresh",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

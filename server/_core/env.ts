@@ -8,4 +8,7 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   serpapiKey: process.env.SERPAPI_KEY ?? "",
+  cronSecret: process.env.CRON_SECRET ?? "",
+  cacheWarmupQueries:
+    process.env.CACHE_WARMUP_QUERIES ?? "developer,software engineer",
 };

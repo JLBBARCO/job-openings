@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, MapPin, Building2, Calendar, Search, Loader2 } from "lucide-react";
+import {
+  Briefcase,
+  MapPin,
+  Building2,
+  Calendar,
+  Search,
+  Loader2,
+} from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Select,
@@ -33,12 +40,14 @@ const DATE_RANGES = [
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("developer");
   const [location, setLocation] = useState("");
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([]);
   const [company, setCompany] = useState("");
-  const [dateRange, setDateRange] = useState<"1h" | "24h" | "72h" | undefined>();
-  const [hasSearched, setHasSearched] = useState(false);
+  const [dateRange, setDateRange] = useState<
+    "1h" | "24h" | "72h" | undefined
+  >();
+  const [hasSearched, setHasSearched] = useState(true);
 
   const jobsQuery = trpc.jobs.search.useQuery(
     {
@@ -55,14 +64,12 @@ export default function Home() {
   );
 
   const handleSearch = () => {
-    if (query.trim()) {
-      setHasSearched(true);
-    }
+    setHasSearched(true);
   };
 
   const handleJobTypeChange = (type: string, checked: boolean) => {
-    setSelectedJobTypes((prev) =>
-      checked ? [...prev, type] : prev.filter((t) => t !== type)
+    setSelectedJobTypes(prev =>
+      checked ? [...prev, type] : prev.filter(t => t !== type)
     );
   };
 
@@ -90,7 +97,8 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-slate-600">
-            Encontre as melhores oportunidades de emprego postadas nas últimas 72 horas
+            Encontre as melhores oportunidades de emprego postadas nas últimas
+            72 horas
           </p>
         </div>
       </header>
@@ -110,8 +118,8 @@ export default function Home() {
                   <Input
                     placeholder="ex: Python Developer"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyPress={e => e.key === "Enter" && handleSearch()}
                     className="pl-10 pr-4 py-2 border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -126,7 +134,7 @@ export default function Home() {
                 <Input
                   placeholder="ex: São Paulo, Brasil"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={e => setLocation(e.target.value)}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
@@ -139,7 +147,7 @@ export default function Home() {
                 <Input
                   placeholder="ex: Google"
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={e => setCompany(e.target.value)}
                   className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
@@ -150,12 +158,12 @@ export default function Home() {
                   Tipo de Vaga
                 </Label>
                 <div className="space-y-2">
-                  {JOB_TYPES.map((type) => (
+                  {JOB_TYPES.map(type => (
                     <div key={type.value} className="flex items-center gap-2">
                       <Checkbox
                         id={type.value}
                         checked={selectedJobTypes.includes(type.value)}
-                        onCheckedChange={(checked) =>
+                        onCheckedChange={checked =>
                           handleJobTypeChange(type.value, checked as boolean)
                         }
                       />
@@ -175,12 +183,15 @@ export default function Home() {
                 <Label className="text-sm font-semibold text-slate-900 mb-2 block">
                   Data de Publicação
                 </Label>
-                <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                <Select
+                  value={dateRange}
+                  onValueChange={(value: any) => setDateRange(value)}
+                >
                   <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione um período" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DATE_RANGES.map((range) => (
+                    {DATE_RANGES.map(range => (
                       <SelectItem key={range.value} value={range.value}>
                         {range.label}
                       </SelectItem>
@@ -192,7 +203,7 @@ export default function Home() {
               {/* Search Button */}
               <Button
                 onClick={handleSearch}
-                disabled={!query.trim() || jobsQuery.isLoading}
+                disabled={jobsQuery.isLoading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
               >
                 {jobsQuery.isLoading ? (
@@ -209,16 +220,20 @@ export default function Home() {
               </Button>
 
               {/* Clear Filters */}
-              {(query || location || company || selectedJobTypes.length > 0 || dateRange) && (
+              {(query ||
+                location ||
+                company ||
+                selectedJobTypes.length > 0 ||
+                dateRange) && (
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setQuery("");
+                    setQuery("developer");
                     setLocation("");
                     setCompany("");
                     setSelectedJobTypes([]);
                     setDateRange(undefined);
-                    setHasSearched(false);
+                    setHasSearched(true);
                   }}
                   className="w-full"
                 >
@@ -237,7 +252,8 @@ export default function Home() {
                   Comece sua busca
                 </h2>
                 <p className="text-slate-600">
-                  Digite uma palavra-chave e clique em "Buscar Vagas" para encontrar oportunidades
+                  Digite uma palavra-chave e clique em "Buscar Vagas" para
+                  encontrar oportunidades
                 </p>
               </div>
             ) : jobsQuery.isLoading ? (
@@ -249,12 +265,23 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold text-slate-900">
-                    {jobsQuery.data.total} vaga{jobsQuery.data.total !== 1 ? "s" : ""} encontrada
+                    {jobsQuery.data.total} vaga
+                    {jobsQuery.data.total !== 1 ? "s" : ""} encontrada
                     {jobsQuery.data.total !== 1 ? "s" : ""}
                   </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Fonte:{" "}
+                    {jobsQuery.data.source === "cache"
+                      ? "cache local"
+                      : "API externa"}
+                    {jobsQuery.data.cache.lastRefreshAt
+                      ? ` · Atualizado em ${new Date(jobsQuery.data.cache.lastRefreshAt).toLocaleString("pt-BR")}`
+                      : ""}
+                    {jobsQuery.data.cache.stale ? " · cache antigo" : ""}
+                  </p>
                 </div>
 
-                {jobsQuery.data.jobs.map((job) => (
+                {jobsQuery.data.jobs.map(job => (
                   <Card
                     key={job.jobId}
                     className="hover:shadow-lg transition-shadow cursor-pointer border-slate-200"
@@ -268,7 +295,9 @@ export default function Home() {
                           </CardTitle>
                           <div className="flex items-center gap-2 text-slate-600 text-sm">
                             <Building2 className="w-4 h-4" />
-                            <span className="font-medium">{job.companyName}</span>
+                            <span className="font-medium">
+                              {job.companyName}
+                            </span>
                           </div>
                         </div>
                         {job.thumbnail && (
@@ -322,7 +351,7 @@ export default function Home() {
                           variant="ghost"
                           size="sm"
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             if (job.shareLink) {
                               window.open(job.shareLink, "_blank");
