@@ -4,6 +4,9 @@ import { getLatestJobsUpdatedAt, searchJobsInDb, upsertJob } from "../db";
 
 const HOURS_72_IN_MS = 72 * 60 * 60 * 1000;
 const DEFAULT_QUERY = "developer";
+type ParsedApiJob = ReturnType<typeof parseJobResult>;
+
+const inMemoryJobsById = new Map<string, ParsedApiJob>();
 
 export type DateRange = "1h" | "24h" | "72h";
 
@@ -17,7 +20,9 @@ export type JobSearchInput = {
 
 export type JobsSearchResult = {
   success: boolean;
-  jobs: Awaited<ReturnType<typeof searchJobsInDb>>;
+  jobs: Array<
+    Awaited<ReturnType<typeof searchJobsInDb>>[number] | ParsedApiJob
+  >;
   total: number;
   source: "cache" | "api";
   cache: {
@@ -63,21 +68,58 @@ export async function refreshJobsCacheForQuery(
     return {
       success: false,
       fetched: 0,
+      jobs: [] as ParsedApiJob[],
       reason: "SERPAPI_KEY is not configured",
     } as const;
   }
 
   const apiResults = await searchJobs(query, location);
   const apiJobs = apiResults.jobs_results ?? [];
+  const parsedJobs = apiJobs.map(parseJobResult);
 
-  for (const apiJob of apiJobs) {
-    await upsertJob(parseJobResult(apiJob));
+  for (const parsed of parsedJobs) {
+    inMemoryJobsById.set(parsed.jobId, parsed);
+    await upsertJob(parsed);
   }
 
   return {
     success: true,
     fetched: apiJobs.length,
+    jobs: parsedJobs,
   } as const;
+}
+
+export function getInMemoryJobById(jobId: string) {
+  return inMemoryJobsById.get(jobId);
+}
+
+function applyApiFilters(
+  jobs: ParsedApiJob[],
+  input: JobSearchInput
+): ParsedApiJob[] {
+  return jobs.filter(job => {
+    if (input.jobTypes && input.jobTypes.length > 0) {
+      if (!job.jobType || !input.jobTypes.includes(job.jobType)) {
+        return false;
+      }
+    }
+
+    if (input.company) {
+      const companyName = (job.companyName || "").toLowerCase();
+      if (!companyName.includes(input.company.toLowerCase())) {
+        return false;
+      }
+    }
+
+    if (input.location) {
+      const location = (job.location || "").toLowerCase();
+      if (!location.includes(input.location.toLowerCase())) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 }
 
 export async function refreshWarmupQueries(): Promise<{
@@ -155,7 +197,10 @@ export async function searchJobsWithCache(
   }
 
   try {
-    await refreshJobsCacheForQuery(normalized.query, normalized.location);
+    const refreshResult = await refreshJobsCacheForQuery(
+      normalized.query,
+      normalized.location
+    );
 
     const refreshedJobs = await searchJobsInDb(normalized.query, {
       location: normalized.location,
@@ -163,6 +208,18 @@ export async function searchJobsWithCache(
       company: normalized.company,
       dateRange: normalized.dateRange,
     });
+
+    if (refreshedJobs.length === 0 && refreshResult.jobs.length > 0) {
+      const filteredApiJobs = applyApiFilters(refreshResult.jobs, normalized);
+
+      return {
+        success: true,
+        jobs: filteredApiJobs,
+        total: filteredApiJobs.length,
+        source: "api",
+        cache: await getCacheState(),
+      };
+    }
 
     return {
       success: true,

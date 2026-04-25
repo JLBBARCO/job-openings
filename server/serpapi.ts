@@ -89,22 +89,28 @@ export async function searchJobs(
   }
 
   const url = `https://serpapi.com/search.json?${params.toString()}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: controller.signal });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        `SerpApi error: ${response.status} - ${JSON.stringify(errorData)}`
-      );
+      const errorText = await response.text().catch(() => "");
+      throw new Error(`SerpApi error: ${response.status} - ${errorText}`);
     }
 
     const data: SerpApiResponse = await response.json();
     return data;
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("SerpApi request timed out after 15s");
+    }
+
     console.error("SerpApi search error:", error);
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

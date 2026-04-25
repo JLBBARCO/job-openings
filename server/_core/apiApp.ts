@@ -25,5 +25,27 @@ export function createApiApp(): Express {
     })
   );
 
+  app.use(
+    (
+      err: unknown,
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction
+    ) => {
+      if (!req.path.startsWith("/api")) {
+        return res.status(500).send("Internal Server Error");
+      }
+
+      const message =
+        err instanceof Error ? err.message : "Unexpected server error";
+      console.error("[API] Unhandled error:", err);
+      return res.status(500).json({
+        error: {
+          message,
+        },
+      });
+    }
+  );
+
   return app;
 }

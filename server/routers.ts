@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { searchJobsInDb, getJobById } from "./db";
 import {
+  getInMemoryJobById,
   refreshWarmupQueries,
   searchJobsWithCache,
 } from "./services/jobs.service";
@@ -85,7 +86,8 @@ export const appRouter = router({
       .input(z.object({ jobId: z.string() }))
       .query(async ({ input }) => {
         try {
-          const job = await getJobById(input.jobId);
+          const job =
+            (await getJobById(input.jobId)) ?? getInMemoryJobById(input.jobId);
 
           if (!job) {
             return {

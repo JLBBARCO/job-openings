@@ -23,6 +23,14 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
+type SearchInput = {
+  query: string;
+  location?: string;
+  jobTypes?: string[];
+  company?: string;
+  dateRange?: "1h" | "24h" | "72h";
+};
+
 const JOB_TYPES = [
   { value: "CLT", label: "CLT" },
   { value: "PJ", label: "PJ" },
@@ -44,26 +52,26 @@ export default function Home() {
   const [location, setLocation] = useState("");
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([]);
   const [company, setCompany] = useState("");
-  const [dateRange, setDateRange] = useState<
-    "1h" | "24h" | "72h" | undefined
-  >();
+  const [dateRange, setDateRange] = useState<"" | "1h" | "24h" | "72h">("");
   const [hasSearched, setHasSearched] = useState(true);
+  const [submittedSearch, setSubmittedSearch] = useState<SearchInput>({
+    query: "developer",
+  });
 
-  const jobsQuery = trpc.jobs.search.useQuery(
-    {
-      query: query || "developer",
-      location: location || undefined,
-      jobTypes: selectedJobTypes.length > 0 ? selectedJobTypes : undefined,
-      company: company || undefined,
-      dateRange: dateRange,
-    },
-    {
-      enabled: hasSearched,
-      staleTime: 5 * 60 * 1000,
-    }
-  );
+  const jobsQuery = trpc.jobs.search.useQuery(submittedSearch, {
+    enabled: hasSearched,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
   const handleSearch = () => {
+    setSubmittedSearch({
+      query: query.trim() || "developer",
+      location: location.trim() || undefined,
+      jobTypes: selectedJobTypes.length > 0 ? selectedJobTypes : undefined,
+      company: company.trim() || undefined,
+      dateRange: dateRange || undefined,
+    });
     setHasSearched(true);
   };
 
@@ -185,7 +193,9 @@ export default function Home() {
                 </Label>
                 <Select
                   value={dateRange}
-                  onValueChange={(value: any) => setDateRange(value)}
+                  onValueChange={(value: "" | "1h" | "24h" | "72h") =>
+                    setDateRange(value)
+                  }
                 >
                   <SelectTrigger className="border-slate-300 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Selecione um período" />
@@ -232,7 +242,8 @@ export default function Home() {
                     setLocation("");
                     setCompany("");
                     setSelectedJobTypes([]);
-                    setDateRange(undefined);
+                    setDateRange("");
+                    setSubmittedSearch({ query: "developer" });
                     setHasSearched(true);
                   }}
                   className="w-full"
@@ -374,6 +385,11 @@ export default function Home() {
                 <p className="text-slate-600">
                   Tente ajustar seus filtros ou usar diferentes palavras-chave
                 </p>
+                {jobsQuery.data?.error && (
+                  <p className="text-sm text-amber-700 mt-3">
+                    Detalhe: {jobsQuery.data.error}
+                  </p>
+                )}
               </div>
             )}
           </section>
