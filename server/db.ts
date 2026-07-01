@@ -2,6 +2,7 @@ import { eq, desc, and, like, inArray, gte, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, InsertJob, jobs } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { tokenizeLocationFilter } from "./locationFilter";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -170,12 +171,22 @@ export async function searchJobsInDb(
       whereConditions.push(like(jobs.companyName, `%${filters.company}%`));
     }
 
-    // Filtro por localização
-    if (filters?.location) {
-      whereConditions.push(like(jobs.location, `%${filters.location}%`));
+    // Filtro por localização. Usamos um casamento tolerante: a vaga bate
+    // se o campo location contiver qualquer um dos termos digitados
+    // (cidade, estado OU país), já que o texto retornado pela API costuma
+    // trazer só cidade/estado, sem o país.
+    const locationTokens = tokenizeLocationFilter(filters?.location);
+    if (locationTokens.length > 0) {
+      whereConditions.push(
+        or(...locationTokens.map(token => like(jobs.location, `%${token}%`)))
+      );
     }
 
-    // Filtro por data
+    // Filtro por data de publicação da vaga.
+    // Usamos a data real de publicação (postedAt), calculada a partir do
+    // texto retornado pela Google Jobs API (ex: "3 days ago"). Quando não
+    // é possível determinar essa data, usamos a data de entrada no cache
+    // (createdAt) como aproximação.
     if (filters?.dateRange) {
       const now = new Date();
       let startDate = new Date();
@@ -188,8 +199,9 @@ export async function searchJobsInDb(
         startDate.setDate(startDate.getDate() - 3);
       }
 
+      const effectiveDate = sql`COALESCE(${jobs.postedAt}, ${jobs.createdAt})`;
       whereConditions.push(
-        and(gte(jobs.createdAt, startDate), lte(jobs.createdAt, now))
+        and(gte(effectiveDate, startDate), lte(effectiveDate, now))
       );
     }
 

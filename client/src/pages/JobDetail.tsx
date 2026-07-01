@@ -24,7 +24,9 @@ interface SearchContext {
 export default function JobDetail() {
   const [, params] = useRoute("/job/:jobId");
   const [, navigate] = useLocation();
-  const [searchContext, setSearchContext] = useState<SearchContext | null>(null);
+  const [searchContext, setSearchContext] = useState<SearchContext | null>(
+    null
+  );
   const jobId = params?.jobId;
 
   // Restaurar contexto de busca do URL ou localStorage
@@ -179,7 +181,9 @@ export default function JobDetail() {
                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Ver no LinkedIn
+                      {jobQuery.data.job.via
+                        ? `Ver vaga em ${jobQuery.data.job.via}`
+                        : "Ver vaga completa"}
                     </Button>
                   )}
                   <Button
@@ -197,7 +201,9 @@ export default function JobDetail() {
             {/* Additional Info */}
             <Card className="mt-6 border-slate-200">
               <CardHeader>
-                <CardTitle className="text-lg">Informações Adicionais</CardTitle>
+                <CardTitle className="text-lg">
+                  Informações Adicionais
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">

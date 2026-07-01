@@ -11,4 +11,9 @@ export const ENV = {
   cronSecret: process.env.CRON_SECRET ?? "",
   cacheWarmupQueries:
     process.env.CACHE_WARMUP_QUERIES ?? "developer,software engineer",
+  // Localization for the Google Jobs search (SerpApi google_jobs engine).
+  // Defaults target the app's Brazilian, Portuguese-speaking audience.
+  googleDomain: process.env.GOOGLE_DOMAIN ?? "google.com",
+  googleCountry: process.env.GOOGLE_COUNTRY ?? "br",
+  googleLanguage: process.env.GOOGLE_LANGUAGE ?? "pt-br",
 };

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Briefcase,
   MapPin,
@@ -32,12 +34,12 @@ type SearchInput = {
 };
 
 const JOB_TYPES = [
-  { value: "CLT", label: "CLT" },
-  { value: "PJ", label: "PJ" },
-  { value: "Estágio", label: "Estágio" },
-  { value: "Freelance", label: "Freelance" },
-  { value: "Tempo integral", label: "Tempo integral" },
-  { value: "Meio período", label: "Meio período" },
+  { value: "Full-time", label: "Tempo integral" },
+  { value: "Part-time", label: "Meio período" },
+  { value: "Contractor", label: "Contrato (PJ)" },
+  { value: "Internship", label: "Estágio" },
+  { value: "Temp work", label: "Temporário" },
+  { value: "Volunteer", label: "Voluntário" },
 ];
 
 const DATE_RANGES = [
@@ -93,6 +95,14 @@ export default function Home() {
     navigate(`/job/${jobId}`);
   };
 
+  const formatPostedAt = (postedAt: unknown): string => {
+    if (!postedAt) return "Data de publicação não informada";
+    const date =
+      postedAt instanceof Date ? postedAt : new Date(postedAt as string);
+    if (Number.isNaN(date.getTime())) return "Data de publicação não informada";
+    return `Publicada ${formatDistanceToNow(date, { addSuffix: true, locale: ptBR })}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       {/* Header */}
@@ -101,12 +111,12 @@ export default function Home() {
           <div className="flex items-center gap-3 mb-2">
             <Briefcase className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-slate-900">
-              LinkedIn Jobs Finder
+              Google Jobs Finder
             </h1>
           </div>
           <p className="text-slate-600">
-            Encontre as melhores oportunidades de emprego postadas nas últimas
-            72 horas
+            Encontre as melhores oportunidades de emprego do Google Vagas,
+            agregadas de diversos sites como LinkedIn, Indeed e outros
           </p>
         </div>
       </header>
@@ -356,7 +366,7 @@ export default function Home() {
                       <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                         <span className="text-xs text-slate-500 flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          Publicada recentemente
+                          {formatPostedAt(job.postedAt)}
                         </span>
                         <Button
                           variant="ghost"
@@ -369,7 +379,7 @@ export default function Home() {
                             }
                           }}
                         >
-                          Ver no LinkedIn →
+                          {job.via ? `Ver vaga em ${job.via} →` : "Ver vaga →"}
                         </Button>
                       </div>
                     </CardContent>

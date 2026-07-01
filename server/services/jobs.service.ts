@@ -73,8 +73,20 @@ export async function refreshJobsCacheForQuery(
     } as const;
   }
 
-  const apiResults = await searchJobs(query, location);
-  const apiJobs = apiResults.jobs_results ?? [];
+  let apiResults = await searchJobs(query, location);
+  let apiJobs = apiResults.jobs_results ?? [];
+
+  // A localização digitada pelo usuário pode não corresponder a nenhuma
+  // entrada na base de localizações da SerpApi (typos, bairros, nomes não
+  // suportados etc.), o que faz a Google Jobs API retornar 0 vagas sem
+  // sinalizar erro algum. Como já restringimos a busca ao Brasil via
+  // `gl`/`hl`, tentamos novamente sem a localização em vez de devolver uma
+  // lista vazia para o usuário.
+  if (apiJobs.length === 0 && location) {
+    apiResults = await searchJobs(query);
+    apiJobs = apiResults.jobs_results ?? [];
+  }
+
   const parsedJobs = apiJobs.map(parseJobResult);
 
   for (const parsed of parsedJobs) {
@@ -97,6 +109,14 @@ function applyApiFilters(
   jobs: ParsedApiJob[],
   input: JobSearchInput
 ): ParsedApiJob[] {
+  // Note: we deliberately do NOT re-filter by `input.location` here. These
+  // jobs came straight from a SerpApi search that was already scoped
+  // geographically via the `location`/`gl`/`hl` params (see searchJobs).
+  // Re-filtering by matching the user's raw location text against each
+  // job's short `location` field (usually just "City, State", never the
+  // country name) double-filters and can wipe out perfectly valid results
+  // — e.g. searching location="Brasil" would filter out every job whose
+  // location field is "São Paulo, SP".
   return jobs.filter(job => {
     if (input.jobTypes && input.jobTypes.length > 0) {
       if (!job.jobType || !input.jobTypes.includes(job.jobType)) {
@@ -107,13 +127,6 @@ function applyApiFilters(
     if (input.company) {
       const companyName = (job.companyName || "").toLowerCase();
       if (!companyName.includes(input.company.toLowerCase())) {
-        return false;
-      }
-    }
-
-    if (input.location) {
-      const location = (job.location || "").toLowerCase();
-      if (!location.includes(input.location.toLowerCase())) {
         return false;
       }
     }

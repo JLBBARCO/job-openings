@@ -39,7 +39,7 @@ describe("Jobs Router", () => {
 
     const result = await caller.jobs.search({
       query: "developer",
-      jobTypes: ["CLT", "PJ"],
+      jobTypes: ["Full-time", "Contractor"],
       company: "Google",
       dateRange: "72h",
     });
@@ -54,7 +54,7 @@ describe("Jobs Router", () => {
 
     const result = await caller.jobs.searchCache({
       query: "developer",
-      jobTypes: ["CLT"],
+      jobTypes: ["Full-time"],
     });
 
     expect(result).toBeDefined();

@@ -14,6 +14,15 @@ Required environment variables:
 - `SERPAPI_KEY`
 - `CRON_SECRET` (recommended for protecting cron route)
 - `CACHE_WARMUP_QUERIES` (optional, comma-separated list)
+- `GOOGLE_DOMAIN` (optional, defaults to `google.com`)
+- `GOOGLE_COUNTRY` (optional, `gl` param, defaults to `br`)
+- `GOOGLE_LANGUAGE` (optional, `hl` param, defaults to `pt-br`)
+
+## Google Jobs Integration
+
+- Jobs are sourced from Google Jobs via SerpApi's `google_jobs` engine, which aggregates listings from many job boards (LinkedIn, Indeed, company career sites, etc.) — not from LinkedIn directly.
+- The direct "apply" link shown to users comes from the job's `apply_options` (the real destination on the originating site). Google's own `share_link` (a link back to the Google search results page) is only used as a fallback when no `apply_options` are available.
+- Job type filtering matches against the `schedule_type` value detected by Google (e.g. "Full-time", "Part-time", "Contractor", "Internship", "Temp work", "Volunteer"), normalized to be consistent regardless of the response language.
 
 ## Jobs Cache Strategy
 
