@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseJobResult,
   parseRelativePostedAt,
+  deriveWorkMode,
   type SerpApiJobResult,
 } from "./serpapi";
 
@@ -63,6 +64,65 @@ describe("parseJobResult", () => {
     const parsed = parseJobResult(job);
 
     expect(parsed.jobType).toBe("Full-time");
+  });
+
+  it("derives workMode as Presencial when work_from_home is not set", () => {
+    const job: SerpApiJobResult = {
+      title: "Software Engineer",
+      company_name: "Acme Inc",
+      job_id: "abc123",
+      location: "São Paulo, SP",
+    };
+
+    const parsed = parseJobResult(job);
+
+    expect(parsed.workMode).toBe("Presencial");
+  });
+
+  it("derives workMode as Remoto when work_from_home is true and there's no fixed location", () => {
+    const job: SerpApiJobResult = {
+      title: "Software Engineer",
+      company_name: "Acme Inc",
+      job_id: "abc123",
+      location: "Anywhere",
+      detected_extensions: { work_from_home: true },
+    };
+
+    const parsed = parseJobResult(job);
+
+    expect(parsed.workMode).toBe("Remoto");
+  });
+
+  it("derives workMode as Híbrido when work_from_home is true but there's a fixed location", () => {
+    const job: SerpApiJobResult = {
+      title: "Software Engineer",
+      company_name: "Acme Inc",
+      job_id: "abc123",
+      location: "São Paulo, SP",
+      detected_extensions: { work_from_home: true },
+    };
+
+    const parsed = parseJobResult(job);
+
+    expect(parsed.workMode).toBe("Híbrido");
+  });
+});
+
+describe("deriveWorkMode", () => {
+  it("returns Presencial when work_from_home is false or undefined", () => {
+    expect(deriveWorkMode(false, "São Paulo, SP")).toBe("Presencial");
+    expect(deriveWorkMode(undefined, "São Paulo, SP")).toBe("Presencial");
+  });
+
+  it("returns Remoto when remote and location is placeless", () => {
+    expect(deriveWorkMode(true, "Anywhere")).toBe("Remoto");
+    expect(deriveWorkMode(true, "")).toBe("Remoto");
+    expect(deriveWorkMode(true, undefined)).toBe("Remoto");
+    expect(deriveWorkMode(true, "Em qualquer lugar")).toBe("Remoto");
+  });
+
+  it("returns Híbrido when remote but tied to a specific location", () => {
+    expect(deriveWorkMode(true, "Rio de Janeiro, RJ")).toBe("Híbrido");
   });
 });
 

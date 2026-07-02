@@ -16,6 +16,10 @@ export interface SerpApiJobResult {
     // (e.g. "Full-time", "Part-time", "Contractor", "Internship").
     // There is no `job_type` field in the real API response.
     schedule_type?: string;
+    // Google flags a job as offering remote work with this boolean.
+    // Google does NOT distinguish "fully remote" from "hybrid" itself —
+    // see deriveWorkMode() below for how we infer the difference.
+    work_from_home?: boolean;
   };
   description?: string;
   job_highlights?: Array<{
@@ -249,6 +253,42 @@ export function parseRelativePostedAt(
   return new Date(referenceDate.getTime() - amount * unitMs);
 }
 
+export type WorkMode = "Presencial" | "Híbrido" | "Remoto";
+
+/**
+ * O Google Jobs não expõe uma categoria de 3 opções (presencial/híbrido/
+ * remoto) diretamente — só um booleano `detected_extensions.work_from_home`
+ * indicando se a vaga permite trabalho remoto. Para diferenciar "Remoto" de
+ * "Híbrido" usamos um heurística com base na localização:
+ *  - work_from_home = false/ausente  -> "Presencial"
+ *  - work_from_home = true e location é "Anywhere"/vazia (ou variantes em
+ *    português como "Em qualquer lugar") -> "Remoto" (sem local fixo)
+ *  - work_from_home = true e location tem uma cidade específica -> "Híbrido"
+ *    (a vaga está associada a um escritório, mas permite trabalho remoto)
+ *
+ * Isso é uma aproximação razoável, não uma categorização oficial do Google.
+ */
+export function deriveWorkMode(
+  workFromHome: boolean | undefined,
+  location: string | undefined
+): WorkMode {
+  if (!workFromHome) return "Presencial";
+
+  const normalizedLocation = (location || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  const isPlaceless =
+    !normalizedLocation ||
+    normalizedLocation === "anywhere" ||
+    normalizedLocation === "em qualquer lugar" ||
+    normalizedLocation === "remoto";
+
+  return isPlaceless ? "Remoto" : "Híbrido";
+}
+
 /**
  * Extrair informações estruturadas de uma vaga
  */
@@ -269,6 +309,7 @@ export function parseJobResult(job: SerpApiJobResult) {
     location: job.location,
     description: job.description || "",
     jobType: normalizeScheduleType(extensions.schedule_type),
+    workMode: deriveWorkMode(extensions.work_from_home, job.location),
     salary: extensions.salary || "",
     shareLink: applyLink,
     thumbnail: job.thumbnail,
