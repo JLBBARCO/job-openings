@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { createServer } from "http";
 import net from "net";
-import { createApiApp } from "./apiApp";
-import { startJobsCacheScheduler } from "./jobsCacheScheduler";
-import { serveStatic, setupVite } from "./vite";
+import { createApiApp } from "./apiApp.js";
+import { startJobsCacheScheduler } from "./jobsCacheScheduler.js";
+import { serveStatic, setupVite } from "./vite.js";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {

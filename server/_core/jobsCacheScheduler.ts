@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
-import { ENV } from "./env";
-import { getLatestJobsUpdatedAt } from "../db";
-import { refreshWarmupQueries } from "../services/jobs.service";
+import { ENV } from "./env.js";
+import { getLatestJobsUpdatedAt } from "../db.js";
+import { refreshWarmupQueries } from "../services/jobs.service.js";
 
 const HOURS_72_IN_MS = 72 * 60 * 60 * 1000;
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;

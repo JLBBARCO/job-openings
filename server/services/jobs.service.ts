@@ -1,6 +1,6 @@
-import { parseJobResult, searchJobs } from "../serpapi";
-import { ENV } from "../_core/env";
-import { getLatestJobsUpdatedAt, searchJobsInDb, upsertJob } from "../db";
+import { parseJobResult, searchJobs } from "../serpapi.js";
+import { ENV } from "../_core/env.js";
+import { getLatestJobsUpdatedAt, searchJobsInDb, upsertJob } from "../db.js";
 
 const HOURS_72_IN_MS = 72 * 60 * 60 * 1000;
 const DEFAULT_QUERY = "developer";

@@ -1,8 +1,8 @@
 import { eq, desc, and, like, inArray, gte, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, InsertJob, jobs } from "../drizzle/schema";
-import { ENV } from "./_core/env";
-import { tokenizeLocationFilter } from "./locationFilter";
+import { InsertUser, users, InsertJob, jobs } from "../drizzle/schema.js";
+import { ENV } from "./_core/env.js";
+import { tokenizeLocationFilter } from "./locationFilter.js";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
