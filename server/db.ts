@@ -119,6 +119,7 @@ export async function upsertJob(job: InsertJob): Promise<void> {
           location: job.location,
           description: job.description,
           jobType: job.jobType,
+          workMode: job.workMode,
           salary: job.salary,
           shareLink: job.shareLink,
           thumbnail: job.thumbnail,
@@ -141,6 +142,7 @@ export async function searchJobsInDb(
   filters?: {
     location?: string;
     jobType?: string[];
+    workMode?: string[];
     company?: string;
     dateRange?: "1h" | "24h" | "72h";
   }
@@ -164,6 +166,11 @@ export async function searchJobsInDb(
     // Filtro por tipo de vaga
     if (filters?.jobType && filters.jobType.length > 0) {
       whereConditions.push(inArray(jobs.jobType, filters.jobType));
+    }
+
+    // Filtro por modalidade de trabalho (Presencial, Híbrido, Remoto)
+    if (filters?.workMode && filters.workMode.length > 0) {
+      whereConditions.push(inArray(jobs.workMode, filters.workMode));
     }
 
     // Filtro por empresa

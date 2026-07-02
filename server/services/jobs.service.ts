@@ -14,6 +14,7 @@ export type JobSearchInput = {
   query: string;
   location?: string;
   jobTypes?: string[];
+  workMode?: string[];
   company?: string;
   dateRange?: DateRange;
 };
@@ -37,6 +38,7 @@ function normalizeSearchInput(input: JobSearchInput): JobSearchInput {
     query: input.query?.trim() || DEFAULT_QUERY,
     location: input.location?.trim() || undefined,
     jobTypes: input.jobTypes?.length ? input.jobTypes : undefined,
+    workMode: input.workMode?.length ? input.workMode : undefined,
     company: input.company?.trim() || undefined,
     dateRange: input.dateRange,
   };
@@ -124,6 +126,12 @@ function applyApiFilters(
       }
     }
 
+    if (input.workMode && input.workMode.length > 0) {
+      if (!job.workMode || !input.workMode.includes(job.workMode)) {
+        return false;
+      }
+    }
+
     if (input.company) {
       const companyName = (job.companyName || "").toLowerCase();
       if (!companyName.includes(input.company.toLowerCase())) {
@@ -181,6 +189,7 @@ export async function searchJobsWithCache(
   const cachedJobs = await searchJobsInDb(normalized.query, {
     location: normalized.location,
     jobType: normalized.jobTypes,
+    workMode: normalized.workMode,
     company: normalized.company,
     dateRange: normalized.dateRange,
   });
@@ -218,6 +227,7 @@ export async function searchJobsWithCache(
     const refreshedJobs = await searchJobsInDb(normalized.query, {
       location: normalized.location,
       jobType: normalized.jobTypes,
+      workMode: normalized.workMode,
       company: normalized.company,
       dateRange: normalized.dateRange,
     });

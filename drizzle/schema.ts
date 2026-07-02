@@ -46,6 +46,8 @@ export const jobs = mysqlTable(
     description: text("description"),
     /** Tipo de vaga (CLT, PJ, Estágio, Freelance, etc) */
     jobType: varchar("jobType", { length: 100 }),
+    /** Modalidade de trabalho (Presencial, Híbrido, Remoto) */
+    workMode: varchar("workMode", { length: 20 }),
     /** Salário (em formato texto para flexibilidade) */
     salary: varchar("salary", { length: 100 }),
     /** Link para a vaga */
@@ -67,6 +69,7 @@ export const jobs = mysqlTable(
     jobIdIndex: index("jobId_idx").on(table.jobId),
     companyNameIndex: index("companyName_idx").on(table.companyName),
     jobTypeIndex: index("jobType_idx").on(table.jobType),
+    workModeIndex: index("workMode_idx").on(table.workMode),
     createdAtIndex: index("createdAt_idx").on(table.createdAt),
   })
 );

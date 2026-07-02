@@ -29,6 +29,7 @@ type SearchInput = {
   query: string;
   location?: string;
   jobTypes?: string[];
+  workMode?: Array<"Presencial" | "Híbrido" | "Remoto">;
   company?: string;
   dateRange?: "1h" | "24h" | "72h";
 };
@@ -42,6 +43,12 @@ const JOB_TYPES = [
   { value: "Volunteer", label: "Voluntário" },
 ];
 
+const WORK_MODES = [
+  { value: "Presencial", label: "Presencial" },
+  { value: "Híbrido", label: "Híbrida" },
+  { value: "Remoto", label: "Remota" },
+] as const;
+
 const DATE_RANGES = [
   { value: "1h", label: "Última hora" },
   { value: "24h", label: "Últimas 24h" },
@@ -53,6 +60,9 @@ export default function Home() {
   const [query, setQuery] = useState("developer");
   const [location, setLocation] = useState("");
   const [selectedJobTypes, setSelectedJobTypes] = useState<string[]>([]);
+  const [selectedWorkModes, setSelectedWorkModes] = useState<
+    Array<"Presencial" | "Híbrido" | "Remoto">
+  >([]);
   const [company, setCompany] = useState("");
   const [dateRange, setDateRange] = useState<"" | "1h" | "24h" | "72h">("");
   const [hasSearched, setHasSearched] = useState(true);
@@ -71,6 +81,7 @@ export default function Home() {
       query: query.trim() || "developer",
       location: location.trim() || undefined,
       jobTypes: selectedJobTypes.length > 0 ? selectedJobTypes : undefined,
+      workMode: selectedWorkModes.length > 0 ? selectedWorkModes : undefined,
       company: company.trim() || undefined,
       dateRange: dateRange || undefined,
     });
@@ -83,11 +94,21 @@ export default function Home() {
     );
   };
 
+  const handleWorkModeChange = (
+    mode: "Presencial" | "Híbrido" | "Remoto",
+    checked: boolean
+  ) => {
+    setSelectedWorkModes(prev =>
+      checked ? [...prev, mode] : prev.filter(m => m !== mode)
+    );
+  };
+
   const handleJobClick = (jobId: string) => {
     const searchContext = {
       query,
       location,
       selectedJobTypes,
+      selectedWorkModes,
       company,
       dateRange,
     };
@@ -196,6 +217,32 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Work Mode */}
+              <div>
+                <Label className="text-sm font-semibold text-slate-900 mb-3 block">
+                  Modalidade
+                </Label>
+                <div className="space-y-2">
+                  {WORK_MODES.map(mode => (
+                    <div key={mode.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`workmode-${mode.value}`}
+                        checked={selectedWorkModes.includes(mode.value)}
+                        onCheckedChange={checked =>
+                          handleWorkModeChange(mode.value, checked as boolean)
+                        }
+                      />
+                      <Label
+                        htmlFor={`workmode-${mode.value}`}
+                        className="text-sm text-slate-700 cursor-pointer font-normal"
+                      >
+                        {mode.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Date Range */}
               <div>
                 <Label className="text-sm font-semibold text-slate-900 mb-2 block">
@@ -244,6 +291,7 @@ export default function Home() {
                 location ||
                 company ||
                 selectedJobTypes.length > 0 ||
+                selectedWorkModes.length > 0 ||
                 dateRange) && (
                 <Button
                   variant="outline"
@@ -252,6 +300,7 @@ export default function Home() {
                     setLocation("");
                     setCompany("");
                     setSelectedJobTypes([]);
+                    setSelectedWorkModes([]);
                     setDateRange("");
                     setSubmittedSearch({ query: "developer" });
                     setHasSearched(true);
@@ -343,6 +392,11 @@ export default function Home() {
                           <Badge variant="secondary" className="gap-1">
                             <Briefcase className="w-3 h-3" />
                             {job.jobType}
+                          </Badge>
+                        )}
+                        {job.workMode && (
+                          <Badge variant="secondary" className="gap-1">
+                            {job.workMode}
                           </Badge>
                         )}
                         {job.salary && (

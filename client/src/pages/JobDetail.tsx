@@ -141,6 +141,11 @@ export default function JobDetail() {
                       {jobQuery.data.job.jobType}
                     </Badge>
                   )}
+                  {jobQuery.data.job.workMode && (
+                    <Badge variant="secondary" className="text-sm">
+                      {jobQuery.data.job.workMode}
+                    </Badge>
+                  )}
                   {jobQuery.data.job.salary && (
                     <Badge variant="secondary" className="text-sm">
                       {jobQuery.data.job.salary}
@@ -217,6 +222,12 @@ export default function JobDetail() {
                     <p className="text-sm text-slate-600 mb-1">Tipo de Vaga</p>
                     <p className="font-medium text-slate-900">
                       {jobQuery.data.job.jobType || "Não informado"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600 mb-1">Modalidade</p>
+                    <p className="font-medium text-slate-900">
+                      {jobQuery.data.job.workMode || "Não informado"}
                     </p>
                   </div>
                   <div>
