@@ -14,6 +14,7 @@ export type JobSearchInput = {
   query: string;
   location?: string;
   jobTypes?: string[];
+  workMode?: string[];
   company?: string;
   dateRange?: DateRange;
 };
@@ -37,6 +38,7 @@ function normalizeSearchInput(input: JobSearchInput): JobSearchInput {
     query: input.query?.trim() || DEFAULT_QUERY,
     location: input.location?.trim() || undefined,
     jobTypes: input.jobTypes?.length ? input.jobTypes : undefined,
+    workMode: input.workMode?.length ? input.workMode : undefined,
     company: input.company?.trim() || undefined,
     dateRange: input.dateRange,
   };
@@ -94,10 +96,17 @@ export async function refreshJobsCacheForQuery(
     await upsertJob(parsed);
   }
 
+  // A SerpApi pode responder com HTTP 200 e ainda assim incluir um campo
+  // `error` (cota mensal esgotada, "Google hasn't returned any results for
+  // this query.", parâmetro inválido, etc). Sem isso, esses casos viravam
+  // silenciosamente "0 vagas encontradas" sem indicar o motivo real.
+  const apiError = apiJobs.length === 0 ? apiResults.error : undefined;
+
   return {
     success: true,
     fetched: apiJobs.length,
     jobs: parsedJobs,
+    apiError,
   } as const;
 }
 
@@ -105,7 +114,7 @@ export function getInMemoryJobById(jobId: string) {
   return inMemoryJobsById.get(jobId);
 }
 
-function applyApiFilters(
+export function applyApiFilters(
   jobs: ParsedApiJob[],
   input: JobSearchInput
 ): ParsedApiJob[] {
@@ -120,6 +129,12 @@ function applyApiFilters(
   return jobs.filter(job => {
     if (input.jobTypes && input.jobTypes.length > 0) {
       if (!job.jobType || !input.jobTypes.includes(job.jobType)) {
+        return false;
+      }
+    }
+
+    if (input.workMode && input.workMode.length > 0) {
+      if (!job.workMode || !input.workMode.includes(job.workMode)) {
         return false;
       }
     }
@@ -181,6 +196,7 @@ export async function searchJobsWithCache(
   const cachedJobs = await searchJobsInDb(normalized.query, {
     location: normalized.location,
     jobType: normalized.jobTypes,
+    workMode: normalized.workMode,
     company: normalized.company,
     dateRange: normalized.dateRange,
   });
@@ -218,6 +234,7 @@ export async function searchJobsWithCache(
     const refreshedJobs = await searchJobsInDb(normalized.query, {
       location: normalized.location,
       jobType: normalized.jobTypes,
+      workMode: normalized.workMode,
       company: normalized.company,
       dateRange: normalized.dateRange,
     });
@@ -231,6 +248,10 @@ export async function searchJobsWithCache(
         total: filteredApiJobs.length,
         source: "api",
         cache: await getCacheState(),
+        error:
+          filteredApiJobs.length === 0
+            ? "A SerpApi retornou vagas, mas nenhuma passou nos filtros aplicados (tipo de vaga, modalidade ou empresa). Tente remover algum filtro."
+            : undefined,
       };
     }
 
@@ -240,6 +261,11 @@ export async function searchJobsWithCache(
       total: refreshedJobs.length,
       source: "api",
       cache: await getCacheState(),
+      error:
+        refreshedJobs.length === 0
+          ? (refreshResult.apiError ??
+            "A SerpApi não retornou nenhuma vaga para essa busca.")
+          : undefined,
     };
   } catch (error) {
     console.error("[JobsService] Failed to refresh from API:", error);

@@ -35,6 +35,9 @@ export const appRouter = router({
           query: z.string().min(1, "Query is required"),
           location: z.string().optional(),
           jobTypes: z.array(z.string()).optional(),
+          workMode: z
+            .array(z.enum(["Presencial", "Híbrido", "Remoto"]))
+            .optional(),
           company: z.string().optional(),
           dateRange: z.enum(["1h", "24h", "72h"]).optional(),
         })
@@ -120,6 +123,9 @@ export const appRouter = router({
           query: z.string().optional(),
           location: z.string().optional(),
           jobTypes: z.array(z.string()).optional(),
+          workMode: z
+            .array(z.enum(["Presencial", "Híbrido", "Remoto"]))
+            .optional(),
           company: z.string().optional(),
           dateRange: z.enum(["1h", "24h", "72h"]).optional(),
         })
@@ -129,6 +135,7 @@ export const appRouter = router({
           const jobs = await searchJobsInDb(input.query, {
             location: input.location,
             jobType: input.jobTypes,
+            workMode: input.workMode,
             company: input.company,
             dateRange: input.dateRange,
           });

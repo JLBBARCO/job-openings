@@ -40,6 +40,7 @@ describe("Jobs Router", () => {
     const result = await caller.jobs.search({
       query: "developer",
       jobTypes: ["Full-time", "Contractor"],
+      workMode: ["Remoto", "Híbrido"],
       company: "Google",
       dateRange: "72h",
     });
