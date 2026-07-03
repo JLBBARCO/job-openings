@@ -131,9 +131,7 @@ export default function Home() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center gap-3 mb-2">
             <Briefcase className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">
-              Google Jobs Finder
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900">Jobs Finder</h1>
           </div>
           <p className="text-slate-600">
             Encontre as melhores oportunidades de emprego do Google Vagas,
