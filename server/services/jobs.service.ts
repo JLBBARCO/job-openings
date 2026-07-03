@@ -89,6 +89,18 @@ export async function refreshJobsCacheForQuery(
     apiJobs = apiResults.jobs_results ?? [];
   }
 
+  // Último recurso: o Google Jobs às vezes é mais restritivo com os
+  // parâmetros de localidade (google_domain/gl/hl) do que a busca padrão
+  // do Google, e pode retornar 0 resultados mesmo para termos comuns. Se
+  // ainda não achamos nada, tentamos uma busca totalmente sem esses
+  // parâmetros antes de desistir.
+  if (apiJobs.length === 0) {
+    apiResults = await searchJobs(query, undefined, undefined, {
+      skipLocalization: true,
+    });
+    apiJobs = apiResults.jobs_results ?? [];
+  }
+
   const parsedJobs = apiJobs.map(parseJobResult);
 
   for (const parsed of parsedJobs) {

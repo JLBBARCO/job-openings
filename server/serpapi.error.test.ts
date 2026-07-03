@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { searchJobs } from "./serpapi";
+import { searchJobs, isNoResultsMessage } from "./serpapi";
 import { ENV } from "./_core/env";
 
 function mockFetchOnce(body: unknown, status = 200) {
@@ -56,5 +56,40 @@ describe("searchJobs error handling", () => {
 
     const result = await searchJobs("developer");
     expect(result.jobs_results).toHaveLength(1);
+  });
+
+  it("does NOT throw for the 'no results' pseudo-error — this must stay recoverable", async () => {
+    // This is the exact bug found in production: SerpApi reports
+    // "Google hasn't returned any results for this query." via the same
+    // `error` field used for fatal account issues. Throwing here would
+    // short-circuit refreshJobsCacheForQuery's fallback cascade (retry
+    // without location, retry without gl/hl) before it ever runs.
+    ENV.serpapiKey = "fake-key-for-test";
+    mockFetchOnce({
+      search_metadata: { status: "Success" },
+      error: "Google hasn't returned any results for this query.",
+    });
+
+    const result = await searchJobs("developer", "Brasil");
+    expect(result.error).toBe(
+      "Google hasn't returned any results for this query."
+    );
+    expect(result.jobs_results ?? []).toHaveLength(0);
+  });
+});
+
+describe("isNoResultsMessage", () => {
+  it("recognizes SerpApi's zero-results message", () => {
+    expect(
+      isNoResultsMessage("Google hasn't returned any results for this query.")
+    ).toBe(true);
+    expect(isNoResultsMessage("No results found.")).toBe(true);
+  });
+
+  it("does not classify fatal account errors as no-results", () => {
+    expect(
+      isNoResultsMessage("Your account has run out of searches for this month.")
+    ).toBe(false);
+    expect(isNoResultsMessage("Invalid API key.")).toBe(false);
   });
 });

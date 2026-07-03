@@ -115,16 +115,34 @@ export function normalizeLocationForGoogleJobs(
 }
 
 /**
+ * A SerpApi usa o mesmo campo `error` tanto para falhas reais de conta
+ * (chave inválida, cota esgotada, rate limit) quanto para uma mensagem de
+ * "não achei nada" (ex: "Google hasn't returned any results for this
+ * query."). Esses dois casos precisam de tratamento bem diferente: o
+ * primeiro é fatal, o segundo é equivalente a uma busca com 0 resultados
+ * e deve permitir que o chamador tente novamente com parâmetros mais
+ * amplos (ver refreshJobsCacheForQuery).
+ */
+export function isNoResultsMessage(message: string): boolean {
+  return /hasn.?t returned any results|no results found/i.test(message);
+}
+
+/**
  * Buscar vagas de emprego na SerpApi
  * @param query - Termo de busca (ex: "Python Developer")
  * @param location - Localização (ex: "São Paulo, Brasil")
  * @param pageToken - Token para paginação
+ * @param options.skipLocalization - Não envia google_domain/gl/hl. Usado
+ *   como último recurso quando a busca localizada não retorna nada — o
+ *   Google Jobs às vezes é mais restritivo com esses parâmetros do que a
+ *   busca padrão do Google.
  * @returns Resposta da SerpApi com vagas
  */
 export async function searchJobs(
   query: string,
   location?: string,
-  pageToken?: string
+  pageToken?: string,
+  options?: { skipLocalization?: boolean }
 ): Promise<SerpApiResponse> {
   if (!ENV.serpapiKey) {
     throw new Error("SERPAPI_KEY is not configured");
@@ -134,14 +152,19 @@ export async function searchJobs(
     engine: "google_jobs",
     q: query,
     api_key: ENV.serpapiKey,
+  });
+
+  if (!options?.skipLocalization) {
     // Localization params. Without these Google defaults to a generic
     // US/English result set, which doesn't match this app's Brazilian,
     // Portuguese-speaking audience (see location placeholders like
-    // "São Paulo, Brasil" and job type labels like "CLT"/"PJ").
-    google_domain: ENV.googleDomain,
-    gl: ENV.googleCountry,
-    hl: ENV.googleLanguage,
-  });
+    // "São Paulo, Brasil" and job type labels like "CLT"/"PJ"). However,
+    // the Google Jobs vertical is sometimes stricter about these than
+    // regular web search, so callers can disable them as a last resort.
+    params.append("google_domain", ENV.googleDomain);
+    params.append("gl", ENV.googleCountry);
+    params.append("hl", ENV.googleLanguage);
+  }
 
   const normalizedLocation = normalizeLocationForGoogleJobs(location);
   if (normalizedLocation) {
@@ -166,7 +189,7 @@ export async function searchJobs(
 
     const data: SerpApiResponse = await response.json();
 
-    if (data.error) {
+    if (data.error && !isNoResultsMessage(data.error)) {
       // Account/key-level failure reported inside a 200 OK response body
       // (e.g. "Your account has run out of searches for this month.",
       // "Invalid API key."). Surface it as a real error instead of letting
